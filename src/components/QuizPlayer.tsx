@@ -94,8 +94,8 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
 
           {selectedAnswer && (
             <motion.div
-              initial={{ opacity: 0, mt: 0 }}
-              animate={{ opacity: 1, mt: 32 }}
+              initial={{ opacity: 0, y: 0 }}
+              animate={{ opacity: 1, y: 32 }}
               className="flex justify-center"
             >
               <button
