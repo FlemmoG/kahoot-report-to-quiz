@@ -10,7 +10,8 @@ interface QuizPlayerProps {
 
 export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<Answer | null>(null);
+  const [selectedAnswers, setSelectedAnswers] = useState<Answer[]>([]);
+  const [isRevealed, setIsRevealed] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
   const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
@@ -19,21 +20,57 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
   const progressPercentage = ((currentIndex) / questions.length) * 100;
 
   const handleAnswerClick = useCallback((answer: Answer) => {
-    if (selectedAnswer) return; // Prevent multiple clicks
+    if (isRevealed) return; // Prevent clicks after revealing
     
-    setSelectedAnswer(answer);
-    setUserAnswers(prev => [...prev, { question: currentQuestion, selectedAnswer: answer }]);
-    if (answer.isCorrect) {
+    const hasMultipleCorrectAnswers = currentQuestion.answers.filter(a => a.isCorrect).length > 1;
+
+    if (hasMultipleCorrectAnswers) {
+      setSelectedAnswers(prev => {
+        if (prev.includes(answer)) {
+          return prev.filter(a => a !== answer);
+        } else {
+          return [...prev, answer];
+        }
+      });
+    } else {
+      // Single correct answer: select and reveal immediately
+      setSelectedAnswers([answer]);
+      setIsRevealed(true);
+      
+      setUserAnswers(prev => [...prev, { question: currentQuestion, selectedAnswers: [answer] }]);
+      if (answer.isCorrect) {
+        setCorrectCount(s => s + 1);
+      } else {
+        setIncorrectCount(s => s + 1);
+      }
+    }
+  }, [isRevealed, currentQuestion]);
+
+  const handleSubmit = useCallback(() => {
+    if (isRevealed || selectedAnswers.length === 0) return;
+    
+    setIsRevealed(true);
+    
+    // Check if all selected answers are correct and all correct answers are selected
+    const correctAnswers = currentQuestion.answers.filter(a => a.isCorrect);
+    const isFullyCorrect = 
+      selectedAnswers.length === correctAnswers.length &&
+      selectedAnswers.every(a => a.isCorrect);
+      
+    setUserAnswers(prev => [...prev, { question: currentQuestion, selectedAnswers }]);
+    
+    if (isFullyCorrect) {
       setCorrectCount(s => s + 1);
     } else {
       setIncorrectCount(s => s + 1);
     }
-  }, [selectedAnswer, currentQuestion]);
+  }, [isRevealed, selectedAnswers, currentQuestion]);
 
   const handleNext = useCallback(() => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(i => i + 1);
-      setSelectedAnswer(null);
+      setSelectedAnswers([]);
+      setIsRevealed(false);
     } else {
       onFinish(correctCount, incorrectCount, questions.length, userAnswers);
     }
@@ -43,12 +80,20 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!currentQuestion) return;
 
-      if (selectedAnswer) {
+      if (isRevealed) {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           handleNext();
         }
       } else {
+        const hasMultipleCorrectAnswers = currentQuestion.answers.filter(a => a.isCorrect).length > 1;
+        
+        if (hasMultipleCorrectAnswers && selectedAnswers.length > 0 && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          handleSubmit();
+          return;
+        }
+
         const keyMap: { [key: string]: number } = {
           '1': 0,
           '2': 1,
@@ -66,7 +111,7 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentQuestion, selectedAnswer, handleNext, handleAnswerClick]);
+  }, [currentQuestion, isRevealed, selectedAnswers, handleNext, handleAnswerClick, handleSubmit]);
 
   if (!currentQuestion) return null;
 
@@ -120,22 +165,33 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
           transition={{ duration: 0.3 }}
           className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-700/50 p-6 sm:p-10"
         >
-          <div className="min-h-[120px] flex items-center justify-center mb-10">
+          <div className="min-h-[120px] flex flex-col items-center justify-center mb-10">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-slate-800 dark:text-slate-100 leading-tight">
               {currentQuestion.questionText}
             </h2>
+            {currentQuestion.answers.filter(a => a.isCorrect).length > 1 && (
+              <p className="mt-4 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full">
+                Select all correct answers
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {currentQuestion.answers.map((answer, idx) => {
               let buttonClass = "relative min-h-[80px] p-6 rounded-2xl text-lg font-semibold transition-all duration-200 border-2 flex items-center justify-center text-center ";
               
-              if (!selectedAnswer) {
-                buttonClass += "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 hover:shadow-md hover:-translate-y-1";
+              const isSelected = selectedAnswers.includes(answer);
+
+              if (!isRevealed) {
+                if (isSelected) {
+                  buttonClass += "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-300 shadow-sm z-10 scale-[1.02]";
+                } else {
+                  buttonClass += "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 hover:shadow-md hover:-translate-y-1";
+                }
               } else {
                 if (answer.isCorrect) {
                   buttonClass += "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 shadow-sm z-10 scale-[1.02]";
-                } else if (selectedAnswer === answer) {
+                } else if (isSelected) {
                   buttonClass += "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 shadow-sm z-10 scale-[1.02]";
                 } else {
                   buttonClass += "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 opacity-60 scale-95";
@@ -147,19 +203,25 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
                   key={idx}
                   onClick={() => handleAnswerClick(answer)}
                   className={buttonClass}
-                  disabled={!!selectedAnswer}
+                  disabled={isRevealed}
                 >
                   {answer.text}
                   
                   {/* Icons for correct/incorrect answers after selection */}
-                  {selectedAnswer && answer.isCorrect && (
+                  {isRevealed && answer.isCorrect && (
                     <div className="absolute top-3 right-3 text-green-500">
                       <CheckCircle2 className="w-6 h-6" />
                     </div>
                   )}
-                  {selectedAnswer && selectedAnswer === answer && !answer.isCorrect && (
+                  {isRevealed && isSelected && !answer.isCorrect && (
                     <div className="absolute top-3 right-3 text-red-500">
                       <XCircle className="w-6 h-6" />
+                    </div>
+                  )}
+                  {/* Icon for selected answer before reveal */}
+                  {!isRevealed && isSelected && (
+                    <div className="absolute top-3 right-3 text-indigo-500">
+                      <CheckCircle2 className="w-6 h-6" />
                     </div>
                   )}
                 </button>
@@ -170,7 +232,19 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
           {/* Fixed height container for the Next button to prevent layout shift */}
           <div className="mt-10 h-14 flex justify-center items-center">
             <AnimatePresence>
-              {selectedAnswer && (
+              {!isRevealed && selectedAnswers.length > 0 && currentQuestion.answers.filter(a => a.isCorrect).length > 1 && (
+                <motion.button
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  onClick={handleSubmit}
+                  className="flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-200 dark:shadow-none hover:shadow-indigo-300 hover:-translate-y-0.5 active:translate-y-0 w-full sm:w-auto justify-center"
+                >
+                  Submit Answer
+                  <ArrowRight className="w-5 h-5" />
+                </motion.button>
+              )}
+              {isRevealed && (
                 <motion.button
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}

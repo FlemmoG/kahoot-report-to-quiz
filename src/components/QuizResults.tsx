@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, RotateCcw, CheckCircle2, XCircle } from 'lucide-react';
+import { Trophy, RotateCcw, CheckCircle2, XCircle, Play } from 'lucide-react';
 import { UserAnswer } from '@/lib/kahootParser';
 
 interface QuizResultsProps {
@@ -9,9 +9,10 @@ interface QuizResultsProps {
   total: number;
   userAnswers: UserAnswer[];
   onRestart: () => void;
+  onRetry?: () => void;
 }
 
-export function QuizResults({ correct, incorrect, total, userAnswers, onRestart }: QuizResultsProps) {
+export function QuizResults({ correct, incorrect, total, userAnswers, onRestart, onRetry }: QuizResultsProps) {
   const percentage = Math.min(Math.round((correct / total) * 100), 100);
   
   let grade = 'F';
@@ -109,19 +110,25 @@ export function QuizResults({ correct, incorrect, total, userAnswers, onRestart 
           >
             <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Review Incorrect Answers</h3>
             <div className="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-              {userAnswers.filter(ua => !ua.selectedAnswer?.isCorrect).map((ua, idx) => {
-                const correctAnswer = ua.question.answers.find(a => a.isCorrect);
+              {userAnswers.filter(ua => {
+                const correctAnswers = ua.question.answers.filter(a => a.isCorrect);
+                const isFullyCorrect = 
+                  ua.selectedAnswers.length === correctAnswers.length &&
+                  ua.selectedAnswers.every(a => a.isCorrect);
+                return !isFullyCorrect;
+              }).map((ua, idx) => {
+                const correctAnswers = ua.question.answers.filter(a => a.isCorrect);
                 return (
                   <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                     <p className="font-semibold text-slate-800 dark:text-slate-200 mb-2">{ua.question.questionText}</p>
                     <div className="text-sm space-y-1">
                       <p className="text-red-600 dark:text-red-400 flex items-start gap-2">
                         <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                        <span>Your answer: {ua.selectedAnswer?.text || 'None'}</span>
+                        <span>Your answer: {ua.selectedAnswers.length > 0 ? ua.selectedAnswers.map(a => a.text).join(', ') : 'None'}</span>
                       </p>
                       <p className="text-green-600 dark:text-green-400 flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
-                        <span>Correct answer: {correctAnswer?.text}</span>
+                        <span>Correct answer: {correctAnswers.map(a => a.text).join(', ')}</span>
                       </p>
                     </div>
                   </div>
@@ -131,16 +138,31 @@ export function QuizResults({ correct, incorrect, total, userAnswers, onRestart 
           </motion.div>
         )}
         
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          onClick={onRestart}
-          className="flex items-center justify-center w-full px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-200 dark:shadow-none hover:shadow-indigo-300 hover:-translate-y-0.5 active:translate-y-0"
-        >
-          <RotateCcw className="w-5 h-5 mr-2" />
-          Start New Quiz
-        </motion.button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {onRetry && (
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              onClick={onRetry}
+              className="flex items-center justify-center w-full px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-200 dark:shadow-none hover:shadow-indigo-300 hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <Play className="w-5 h-5 mr-2" />
+              Retry Quiz
+            </motion.button>
+          )}
+
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.65 }}
+            onClick={onRestart}
+            className="flex items-center justify-center w-full px-6 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl font-bold transition-all shadow-sm hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+          >
+            <RotateCcw className="w-5 h-5 mr-2" />
+            Start New Quiz
+          </motion.button>
+        </div>
       </div>
     </motion.div>
   );

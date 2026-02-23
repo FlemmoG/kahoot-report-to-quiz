@@ -14,7 +14,7 @@ export type Question = {
 
 export type UserAnswer = {
   question: Question;
-  selectedAnswer: Answer | null;
+  selectedAnswers: Answer[];
 };
 
 export function shuffleArray<T>(array: T[]): T[] {
@@ -24,6 +24,20 @@ export function shuffleArray<T>(array: T[]): T[] {
     [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
   }
   return newArray;
+}
+
+export function cleanText(text: string): string {
+  if (!text) return '';
+  return String(text)
+    .replace(/&nbsp;?/gi, ' ')
+    .replace(/&amp;?/gi, '&')
+    .replace(/&lt;?/gi, '<')
+    .replace(/&gt;?/gi, '>')
+    .replace(/&quot;?/gi, '"')
+    .replace(/&#39;?/g, "'")
+    .replace(/&#x27;?/gi, "'")
+    .replace(/&#x2F;?/gi, "/")
+    .trim();
 }
 
 export async function parseKahootExcel(file: File): Promise<Question[]> {
@@ -76,7 +90,7 @@ export async function parseKahootExcel(file: File): Promise<Question[]> {
               const correctnessIndicator = isAnswerCorrectRow[i - 1];
               const isCorrect = correctnessIndicator === '✔︎';
               answers.push({
-                text: String(answerText),
+                text: cleanText(String(answerText)),
                 isCorrect
               });
             }
@@ -89,7 +103,7 @@ export async function parseKahootExcel(file: File): Promise<Question[]> {
           if (answers.length > 0 && hasCorrectAnswer) {
             questions.push({
               id: sheetName,
-              questionText: String(questionText),
+              questionText: cleanText(String(questionText)),
               answers: shuffleArray(answers)
             });
           }

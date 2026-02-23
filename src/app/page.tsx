@@ -17,6 +17,7 @@ export default function Home() {
   const [incorrectCount, setIncorrectCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [attemptKey, setAttemptKey] = useState(0);
 
   const handleFilesSelect = (files: File[]) => {
     setSelectedFiles(prev => [...prev, ...files]);
@@ -56,6 +57,7 @@ export default function Home() {
       const finalQuestions = [...shuffleArray(weak), ...shuffleArray(normal)];
 
       setQuestions(finalQuestions);
+      setAttemptKey(0);
       setState('playing');
     } catch (err) {
       console.error(err);
@@ -74,7 +76,12 @@ export default function Home() {
     let weakQuestions: string[] = weakQuestionsStr ? JSON.parse(weakQuestionsStr) : [];
     
     answers.forEach(ans => {
-      if (ans.selectedAnswer?.isCorrect) {
+      const correctAnswers = ans.question.answers.filter(a => a.isCorrect);
+      const isFullyCorrect = 
+        ans.selectedAnswers.length === correctAnswers.length &&
+        ans.selectedAnswers.every(a => a.isCorrect);
+
+      if (isFullyCorrect) {
         weakQuestions = weakQuestions.filter(q => q !== ans.question.questionText);
       } else {
         if (!weakQuestions.includes(ans.question.questionText)) {
@@ -95,6 +102,15 @@ export default function Home() {
     setIncorrectCount(0);
     setSelectedFiles([]);
     setState('upload');
+  };
+
+  const handleRetry = () => {
+    // Reset per-attempt counters and remount the QuizPlayer
+    setCorrectCount(0);
+    setIncorrectCount(0);
+    setUserAnswers([]);
+    setAttemptKey(k => k + 1);
+    setState('playing');
   };
 
   return (
@@ -164,6 +180,7 @@ export default function Home() {
 
       {state === 'playing' && (
         <QuizPlayer 
+          key={attemptKey}
           questions={questions} 
           onFinish={handleFinish} 
         />
@@ -173,7 +190,10 @@ export default function Home() {
         <QuizResults 
           correct={correctCount}
           incorrect={incorrectCount}
-          total={questions.length}           userAnswers={userAnswers}          onRestart={handleRestart} 
+          total={questions.length}
+          userAnswers={userAnswers}
+          onRestart={handleRestart}
+          onRetry={handleRetry}
         />
       )}
     </main>
