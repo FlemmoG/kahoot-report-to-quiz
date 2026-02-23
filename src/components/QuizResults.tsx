@@ -10,9 +10,10 @@ interface QuizResultsProps {
   userAnswers: UserAnswer[];
   onRestart: () => void;
   onRetry?: () => void;
+  durationSeconds?: number | null;
 }
 
-export function QuizResults({ correct, incorrect, total, userAnswers, onRestart, onRetry }: QuizResultsProps) {
+export function QuizResults({ correct, incorrect, total, userAnswers, onRestart, onRetry, durationSeconds }: QuizResultsProps) {
   const percentage = Math.min(Math.round((correct / total) * 100), 100);
   
   let grade = 'F';
@@ -53,7 +54,13 @@ export function QuizResults({ correct, incorrect, total, userAnswers, onRestart,
         </motion.div>
         
         <h2 className="text-3xl font-bold mb-2 text-slate-800 dark:text-slate-100">Quiz Completed!</h2>
-        <p className="text-slate-500 dark:text-slate-400 mb-10">Here&#39;s how you performed</p>
+        <p className="text-slate-500 dark:text-slate-400 mb-2">Here&#39;s how you performed</p>
+        {/* display duration if provided */}
+        {typeof durationSeconds !== 'undefined' && (
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-10">
+            Time: {formatDuration(durationSeconds)}
+          </p>
+        )}
         
         <div className="flex flex-col items-center justify-center mb-10">
           <div className="relative">
@@ -166,4 +173,12 @@ export function QuizResults({ correct, incorrect, total, userAnswers, onRestart,
       </div>
     </motion.div>
   );
+}
+
+function formatDuration(seconds: number | null | undefined) {
+  if (seconds == null) return '—';
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  if (mins > 0) return `${mins}:${secs.toString().padStart(2, '0')} min`;
+  return `${secs}s`;
 }

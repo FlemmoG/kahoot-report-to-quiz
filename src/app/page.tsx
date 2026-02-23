@@ -16,6 +16,7 @@ export default function Home() {
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [durationSeconds, setDurationSeconds] = useState<number | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [attemptKey, setAttemptKey] = useState(0);
 
@@ -66,10 +67,11 @@ export default function Home() {
     }
   };
 
-  const handleFinish = (correct: number, incorrect: number, total: number, answers: UserAnswer[]) => {
+  const handleFinish = (correct: number, incorrect: number, total: number, answers: UserAnswer[], duration: number) => {
     setCorrectCount(correct);
     setIncorrectCount(incorrect);
     setUserAnswers(answers);
+    setDurationSeconds(duration);
     
     // Update weak questions in localStorage
     const weakQuestionsStr = localStorage.getItem('weakQuestions');
@@ -192,6 +194,7 @@ export default function Home() {
           incorrect={incorrectCount}
           total={questions.length}
           userAnswers={userAnswers}
+          durationSeconds={durationSeconds}
           onRestart={handleRestart}
           onRetry={handleRetry}
         />

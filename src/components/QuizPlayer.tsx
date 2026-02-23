@@ -5,7 +5,7 @@ import { CheckCircle2, XCircle, ArrowRight, BrainCircuit } from 'lucide-react';
 
 interface QuizPlayerProps {
   questions: Question[];
-  onFinish: (correct: number, incorrect: number, total: number, userAnswers: UserAnswer[]) => void;
+  onFinish: (correct: number, incorrect: number, total: number, userAnswers: UserAnswer[], durationSeconds: number) => void;
 }
 
 export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
@@ -15,6 +15,9 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
   const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const startRef = React.useRef<number | null>(null);
+  const intervalRef = React.useRef<number | null>(null);
 
   const currentQuestion = questions[currentIndex];
   const progressPercentage = ((currentIndex) / questions.length) * 100;
@@ -72,9 +75,36 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
       setSelectedAnswers([]);
       setIsRevealed(false);
     } else {
-      onFinish(correctCount, incorrectCount, questions.length, userAnswers);
+      // compute duration
+      const durationMs = startRef.current ? Date.now() - startRef.current : elapsedSeconds * 1000;
+      const durationSeconds = Math.round(durationMs / 1000);
+      // stop interval
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+
+      onFinish(correctCount, incorrectCount, questions.length, userAnswers, durationSeconds);
     }
-  }, [currentIndex, questions.length, onFinish, correctCount, incorrectCount, userAnswers]);
+  }, [currentIndex, questions.length, onFinish, correctCount, incorrectCount, userAnswers, elapsedSeconds]);
+
+  // start timer on mount of the player
+  useEffect(() => {
+    // initialize
+    startRef.current = Date.now();
+    intervalRef.current = window.setInterval(() => {
+      if (startRef.current) {
+        setElapsedSeconds(Math.floor((Date.now() - startRef.current) / 1000));
+      }
+    }, 1000);
+
+    return () => {
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [/* run when component mounts */]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -113,6 +143,13 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentQuestion, isRevealed, selectedAnswers, handleNext, handleAnswerClick, handleSubmit]);
 
+  function formatDuration(seconds: number | null | undefined) {
+    if (seconds == null) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
   if (!currentQuestion) return null;
 
   return (
@@ -134,6 +171,11 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
           </div>
           
           <div className="flex gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 mr-2">
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-full text-xs sm:text-sm font-bold border border-slate-200 dark:border-slate-700/50">
+                <span className="font-mono">{formatDuration(elapsedSeconds)}</span>
+              </div>
+            </div>
             <div className="flex items-center gap-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-bold border border-green-200 dark:border-green-800/50">
               <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>{correctCount}</span>
