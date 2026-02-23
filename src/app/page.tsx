@@ -64,12 +64,12 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans">
-      <div className="absolute top-8 flex items-center gap-3 text-center opacity-80">
-        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl">
-          <BrainCircuit className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+    <main className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 pt-[max(2rem,env(safe-area-inset-top))] sm:pt-8 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans">
+      <div className={`absolute top-[max(1rem,env(safe-area-inset-top))] sm:top-8 flex items-center gap-2 sm:gap-3 text-center opacity-80 ${state === 'playing' ? 'hidden sm:flex' : 'flex'}`}>
+        <div className="p-1.5 sm:p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl">
+          <BrainCircuit className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
         </div>
-        <h1 className="text-xl font-bold tracking-tight text-slate-700 dark:text-slate-300">
+        <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-700 dark:text-slate-300">
           Kahoot to Quiz
         </h1>
       </div>

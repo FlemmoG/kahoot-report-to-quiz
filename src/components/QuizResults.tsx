@@ -10,7 +10,7 @@ interface QuizResultsProps {
 }
 
 export function QuizResults({ correct, incorrect, total, onRestart }: QuizResultsProps) {
-  const percentage = Math.round((correct / total) * 100);
+  const percentage = Math.min(Math.round((correct / total) * 100), 100);
   
   let grade = 'F';
   let gradeColor = 'text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/50';

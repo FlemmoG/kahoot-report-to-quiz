@@ -67,7 +67,11 @@ export async function parseKahootExcel(file: File): Promise<Question[]> {
             }
           }
           
-          if (answers.length > 0) {
+          // Only include questions that have at least one correct answer
+          // This filters out open-ended or feedback questions
+          const hasCorrectAnswer = answers.some(a => a.isCorrect);
+          
+          if (answers.length > 0 && hasCorrectAnswer) {
             questions.push({
               id: sheetName,
               questionText: String(questionText),

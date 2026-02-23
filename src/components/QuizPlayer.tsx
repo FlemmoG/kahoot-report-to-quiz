@@ -33,9 +33,7 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
       setCurrentIndex(i => i + 1);
       setSelectedAnswer(null);
     } else {
-      const finalCorrect = correctCount + (selectedAnswer?.isCorrect ? 1 : 0);
-      const finalIncorrect = incorrectCount + (selectedAnswer && !selectedAnswer.isCorrect ? 1 : 0);
-      onFinish(finalCorrect, finalIncorrect, questions.length);
+      onFinish(correctCount, incorrectCount, questions.length);
     }
   };
 
@@ -44,32 +42,33 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
   return (
     <div className="w-full max-w-3xl mx-auto">
       {/* Header with Progress and Scores */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
-        <div className="flex-1 w-full">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Question {currentIndex + 1} <span className="text-slate-400 dark:text-slate-500 font-medium">/ {questions.length}</span>
-            </span>
-          </div>
-          <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-            <motion.div 
-              className="h-full bg-indigo-500 rounded-full"
-              initial={{ width: `${((currentIndex - 1) / questions.length) * 100}%` }}
-              animate={{ width: `${progressPercentage}%` }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-            />
+      <div className="mb-6 flex flex-col gap-3">
+        {/* Row 2: Info & Status */}
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            Question {currentIndex + 1} <span className="text-slate-400 dark:text-slate-500 font-medium">/ {questions.length}</span>
+          </span>
+          
+          <div className="flex gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-bold border border-green-200 dark:border-green-800/50">
+              <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>{correctCount}</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-bold border border-red-200 dark:border-red-800/50">
+              <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>{incorrectCount}</span>
+            </div>
           </div>
         </div>
-        
-        <div className="flex gap-3 self-start sm:self-end">
-          <div className="flex items-center gap-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-3 py-1.5 rounded-full text-sm font-bold border border-green-200 dark:border-green-800/50">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{correctCount}</span>
-          </div>
-          <div className="flex items-center gap-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-3 py-1.5 rounded-full text-sm font-bold border border-red-200 dark:border-red-800/50">
-            <XCircle className="w-4 h-4" />
-            <span>{incorrectCount}</span>
-          </div>
+
+        {/* Row 3: Progress */}
+        <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-1">
+          <motion.div 
+            className="h-full bg-indigo-500 rounded-full"
+            initial={{ width: `${((currentIndex - 1) / questions.length) * 100}%` }}
+            animate={{ width: `${progressPercentage}%` }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+          />
         </div>
       </div>
 
