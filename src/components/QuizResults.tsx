@@ -1,15 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, RotateCcw, CheckCircle2, XCircle } from 'lucide-react';
+import { UserAnswer } from '@/lib/kahootParser';
 
 interface QuizResultsProps {
   correct: number;
   incorrect: number;
   total: number;
+  userAnswers: UserAnswer[];
   onRestart: () => void;
 }
 
-export function QuizResults({ correct, incorrect, total, onRestart }: QuizResultsProps) {
+export function QuizResults({ correct, incorrect, total, userAnswers, onRestart }: QuizResultsProps) {
   const percentage = Math.min(Math.round((correct / total) * 100), 100);
   
   let grade = 'F';
@@ -34,7 +36,7 @@ export function QuizResults({ correct, incorrect, total, onRestart }: QuizResult
       initial={{ opacity: 0, scale: 0.95, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-700/50 p-8 sm:p-12 text-center relative overflow-hidden"
+      className="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-700/50 p-8 sm:p-12 text-center relative overflow-hidden"
     >
       {/* Decorative background elements */}
       <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-indigo-50 dark:from-indigo-900/20 to-transparent" />
@@ -50,7 +52,7 @@ export function QuizResults({ correct, incorrect, total, onRestart }: QuizResult
         </motion.div>
         
         <h2 className="text-3xl font-bold mb-2 text-slate-800 dark:text-slate-100">Quiz Completed!</h2>
-        <p className="text-slate-500 dark:text-slate-400 mb-10">Here's how you performed</p>
+        <p className="text-slate-500 dark:text-slate-400 mb-10">Here&#39;s how you performed</p>
         
         <div className="flex flex-col items-center justify-center mb-10">
           <div className="relative">
@@ -97,6 +99,37 @@ export function QuizResults({ correct, incorrect, total, onRestart }: QuizResult
             <span className="text-xs font-semibold text-red-600/70 dark:text-red-400/70 uppercase tracking-wider">Incorrect</span>
           </motion.div>
         </div>
+
+        {incorrect > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
+            className="mb-10 text-left"
+          >
+            <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Review Incorrect Answers</h3>
+            <div className="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+              {userAnswers.filter(ua => !ua.selectedAnswer?.isCorrect).map((ua, idx) => {
+                const correctAnswer = ua.question.answers.find(a => a.isCorrect);
+                return (
+                  <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200 mb-2">{ua.question.questionText}</p>
+                    <div className="text-sm space-y-1">
+                      <p className="text-red-600 dark:text-red-400 flex items-start gap-2">
+                        <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                        <span>Your answer: {ua.selectedAnswer?.text || 'None'}</span>
+                      </p>
+                      <p className="text-green-600 dark:text-green-400 flex items-start gap-2">
+                        <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+                        <span>Correct answer: {correctAnswer?.text}</span>
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
         
         <motion.button
           initial={{ opacity: 0, y: 10 }}

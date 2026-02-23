@@ -9,7 +9,22 @@ export type Question = {
   id: string;
   questionText: string;
   answers: Answer[];
+  isWeakness?: boolean;
 };
+
+export type UserAnswer = {
+  question: Question;
+  selectedAnswer: Answer | null;
+};
+
+export function shuffleArray<T>(array: T[]): T[] {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
 
 export async function parseKahootExcel(file: File): Promise<Question[]> {
   return new Promise((resolve, reject) => {
@@ -75,7 +90,7 @@ export async function parseKahootExcel(file: File): Promise<Question[]> {
             questions.push({
               id: sheetName,
               questionText: String(questionText),
-              answers
+              answers: shuffleArray(answers)
             });
           }
         }

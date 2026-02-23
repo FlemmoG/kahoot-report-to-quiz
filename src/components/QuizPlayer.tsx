@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Question, Answer } from '@/lib/kahootParser';
-import { CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
+import { Question, Answer, UserAnswer } from '@/lib/kahootParser';
+import { CheckCircle2, XCircle, ArrowRight, BrainCircuit } from 'lucide-react';
 
 interface QuizPlayerProps {
   questions: Question[];
-  onFinish: (correct: number, incorrect: number, total: number) => void;
+  onFinish: (correct: number, incorrect: number, total: number, userAnswers: UserAnswer[]) => void;
 }
 
 export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
@@ -13,29 +13,60 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<Answer | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
+  const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
 
   const currentQuestion = questions[currentIndex];
   const progressPercentage = ((currentIndex) / questions.length) * 100;
 
-  const handleAnswerClick = (answer: Answer) => {
+  const handleAnswerClick = useCallback((answer: Answer) => {
     if (selectedAnswer) return; // Prevent multiple clicks
     
     setSelectedAnswer(answer);
+    setUserAnswers(prev => [...prev, { question: currentQuestion, selectedAnswer: answer }]);
     if (answer.isCorrect) {
       setCorrectCount(s => s + 1);
     } else {
       setIncorrectCount(s => s + 1);
     }
-  };
+  }, [selectedAnswer, currentQuestion]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(i => i + 1);
       setSelectedAnswer(null);
     } else {
-      onFinish(correctCount, incorrectCount, questions.length);
+      onFinish(correctCount, incorrectCount, questions.length, userAnswers);
     }
-  };
+  }, [currentIndex, questions.length, onFinish, correctCount, incorrectCount, userAnswers]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!currentQuestion) return;
+
+      if (selectedAnswer) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleNext();
+        }
+      } else {
+        const keyMap: { [key: string]: number } = {
+          '1': 0,
+          '2': 1,
+          '3': 2,
+          '4': 3,
+        };
+        
+        const index = keyMap[e.key];
+        if (index !== undefined && index < currentQuestion.answers.length) {
+          e.preventDefault();
+          handleAnswerClick(currentQuestion.answers[index]);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentQuestion, selectedAnswer, handleNext, handleAnswerClick]);
 
   if (!currentQuestion) return null;
 
@@ -45,9 +76,17 @@ export function QuizPlayer({ questions, onFinish }: QuizPlayerProps) {
       <div className="mb-6 flex flex-col gap-3">
         {/* Row 2: Info & Status */}
         <div className="flex justify-between items-center">
-          <span className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            Question {currentIndex + 1} <span className="text-slate-400 dark:text-slate-500 font-medium">/ {questions.length}</span>
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Question {currentIndex + 1} <span className="text-slate-400 dark:text-slate-500 font-medium">/ {questions.length}</span>
+            </span>
+            {currentQuestion.isWeakness && (
+              <span className="flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded-full border border-orange-200 dark:border-orange-800/50">
+                <BrainCircuit className="w-3 h-3" />
+                Review
+              </span>
+            )}
+          </div>
           
           <div className="flex gap-2 sm:gap-3">
             <div className="flex items-center gap-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-bold border border-green-200 dark:border-green-800/50">

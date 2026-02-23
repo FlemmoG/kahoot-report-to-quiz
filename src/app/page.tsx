@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FileUpload } from '@/components/FileUpload';
 import { QuizPlayer } from '@/components/QuizPlayer';
 import { QuizResults } from '@/components/QuizResults';
-import { parseKahootExcel, Question } from '@/lib/kahootParser';
+import { parseKahootExcel, Question, UserAnswer, shuffleArray } from '@/lib/kahootParser';
 import { Loader2, X, Play, BrainCircuit } from 'lucide-react';
 
 type QuizState = 'upload' | 'parsing' | 'playing' | 'results';
@@ -12,6 +12,7 @@ type QuizState = 'upload' | 'parsing' | 'playing' | 'results';
 export default function Home() {
   const [state, setState] = useState<QuizState>('upload');
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +41,21 @@ export default function Home() {
         setState('upload');
         return;
       }
-      setQuestions(parsedQuestions);
+
+      // Get weak questions from localStorage
+      const weakQuestionsStr = localStorage.getItem('weakQuestions');
+      const weakQuestions: string[] = weakQuestionsStr ? JSON.parse(weakQuestionsStr) : [];
+
+      // Separate into weak and normal
+      const weak = parsedQuestions
+        .filter(q => weakQuestions.includes(q.questionText))
+        .map(q => ({ ...q, isWeakness: true }));
+      const normal = parsedQuestions.filter(q => !weakQuestions.includes(q.questionText));
+
+      // Shuffle both and combine (weak questions first)
+      const finalQuestions = [...shuffleArray(weak), ...shuffleArray(normal)];
+
+      setQuestions(finalQuestions);
       setState('playing');
     } catch (err) {
       console.error(err);
@@ -49,14 +64,33 @@ export default function Home() {
     }
   };
 
-  const handleFinish = (correct: number, incorrect: number) => {
+  const handleFinish = (correct: number, incorrect: number, total: number, answers: UserAnswer[]) => {
     setCorrectCount(correct);
     setIncorrectCount(incorrect);
+    setUserAnswers(answers);
+    
+    // Update weak questions in localStorage
+    const weakQuestionsStr = localStorage.getItem('weakQuestions');
+    let weakQuestions: string[] = weakQuestionsStr ? JSON.parse(weakQuestionsStr) : [];
+    
+    answers.forEach(ans => {
+      if (ans.selectedAnswer?.isCorrect) {
+        weakQuestions = weakQuestions.filter(q => q !== ans.question.questionText);
+      } else {
+        if (!weakQuestions.includes(ans.question.questionText)) {
+          weakQuestions.push(ans.question.questionText);
+        }
+      }
+    });
+    
+    localStorage.setItem('weakQuestions', JSON.stringify(weakQuestions));
+    
     setState('results');
   };
 
   const handleRestart = () => {
     setQuestions([]);
+    setUserAnswers([]);
     setCorrectCount(0);
     setIncorrectCount(0);
     setSelectedFiles([]);
@@ -139,8 +173,7 @@ export default function Home() {
         <QuizResults 
           correct={correctCount}
           incorrect={incorrectCount}
-          total={questions.length} 
-          onRestart={handleRestart} 
+          total={questions.length}           userAnswers={userAnswers}          onRestart={handleRestart} 
         />
       )}
     </main>
