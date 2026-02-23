@@ -113,7 +113,7 @@ export default function Home() {
           <div className="flex flex-col items-center w-full">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Upload your Kahoot Results</h2>
-              <p className="text-slate-500 dark:text-slate-400">Transform your Excel reports into an interactive quiz</p>
+              <p className="text-slate-500 dark:text-slate-400">Transform your Kahoot Excel reports into an interactive quiz</p>
             </div>
 
             <FileUpload onFilesSelect={handleFilesSelect} />
