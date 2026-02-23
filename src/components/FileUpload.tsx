@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 import { FileSpreadsheet } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -34,7 +35,7 @@ export function FileUpload({ onFilesSelect }: FileUploadProps) {
     if (validFiles.length > 0) {
       onFilesSelect(validFiles);
     } else {
-      alert('Please upload only .xlsx files.');
+      toast.error('Please upload only .xlsx files.');
     }
   }, [onFilesSelect]);
 
